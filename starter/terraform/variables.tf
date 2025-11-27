@@ -16,6 +16,11 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "user_email" {
+  description = "The email address of the user running this lab (e.g., student-***@qwiklabs.net)"
+  type        = string
+}
+
 variable "cluster_id" {
   description = "The identifier for the AlloyDB cluster"
   type        = string

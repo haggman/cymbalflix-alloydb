@@ -93,7 +93,7 @@ resource "google_compute_global_address" "private_ip_range" {
   name          = "cymbalflix-private-ip"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
-  prefix_length = 16
+  prefix_length = 20
   network       = google_compute_network.main.id
 
   depends_on = [google_project_service.apis]
@@ -145,62 +145,99 @@ resource "google_project_iam_member" "app_alloydb_client" {
 }
 
 # -----------------------------------------------------------------------------
-# IAM Database Authentication
+# AlloyDB User Registration
 # -----------------------------------------------------------------------------
-# Instead of managing database passwords, we use IAM authentication.
-# This grants the current user (you!) permission to connect to AlloyDB
-# using your Google Cloud identity. Much more secure!
+# This registers the student's email as a user INSIDE the database engine,
+# allowing them to login via IAM.
 
-resource "google_project_iam_member" "user_alloydb_client" {
-  project = var.project_id
-  role    = "roles/alloydb.databaseUser"
-  member  = "user:${data.google_client_openid_userinfo.current.email}"
+resource "google_alloydb_user" "iam_user" {
+  cluster   = google_alloydb_cluster.main.id
+  user_id   = var.user_email
+  user_type = "ALLOYDB_IAM_USER"
+  
+  # This specific line is what makes them a DB Admin
+  database_roles = ["alloydbsuperuser"] 
+
+  depends_on = [google_alloydb_instance.primary]
 }
 
-resource "google_project_iam_member" "user_alloydb_admin" {
-  project = var.project_id
-  role    = "roles/alloydb.admin"
-  member  = "user:${data.google_client_openid_userinfo.current.email}"
+# -----------------------------------------------------------------------------
+# Workaround: Mandatory Initial Password
+# -----------------------------------------------------------------------------
+# Even with IAM Auth, AlloyDB requires an initial password for the default 
+# 'postgres' user. We generate a random one here to satisfy the requirement, 
+# then simply ignore it (since we will be leveraging IAM).
+resource "random_password" "alloydb_initial_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 
 # =============================================================================
 # TODO: ADD YOUR ALLOYDB CLUSTER CONFIGURATION BELOW
 # =============================================================================
-#
-# Use Gemini Code Assist to help generate the AlloyDB cluster configuration.
-# 
-# PROMPT TO USE:
-# "Create an AlloyDB cluster with:
-#  - A primary instance with 2 vCPUs
-#  - A read pool with 1 instance (2 vCPUs each)
-#  - Public IP enabled for easier connectivity
-#  - Columnar engine enabled for analytics
-#  - No initial_user block (we're using IAM authentication)
-#  - Use the variables: var.cluster_id, var.primary_instance_id, 
-#    var.read_pool_id, var.region
-#  - Reference the network: google_compute_network.main.id
-#  - Reference the service account: google_service_account.alloydb.email
-#  - Depend on: google_service_networking_connection.private_vpc_connection"
-#
-# VERIFICATION CHECKLIST:
-# After Code Assist generates the code, verify these settings:
-# [ ] cluster uses var.cluster_id and var.region
-# [ ] NO initial_user block (we use IAM auth instead)
-# [ ] network_config references google_compute_network.main.id
-# [ ] primary instance has machine_type with 2 vCPUs (e.g., cpu_count = 2)
-# [ ] primary instance has public_ip_enabled = true
-# [ ] read pool has node_count = 1
-# [ ] read pool has public_ip_enabled = true
-# [ ] columnar engine is enabled (database_flags with "google_columnar_engine.enabled" = "on")
-# [ ] depends_on includes google_service_networking_connection.private_vpc_connection
-#
+# =============================================================================
+# ALLOYDB CLUSTER CONFIGURATION
 # =============================================================================
 
-# YOUR CODE HERE - Use Gemini Code Assist with the prompt above
+resource "google_alloydb_cluster" "main" {
+  cluster_id = var.cluster_id
+  location   = var.region
 
+  # Connects the cluster to your custom VPC
+  network_config {
+    network = google_compute_network.main.id
+  }
 
+  # REQUIRED: This block is mandatory, even for IAM-only setups.
+  initial_user {
+    password = random_password.alloydb_initial_password.result
+  }
 
+  # Note: We omit the 'initial_user' block because we are using IAM Auth
+}
+
+resource "google_alloydb_instance" "primary" {
+  cluster       = google_alloydb_cluster.main.name
+  instance_id   = var.primary_instance_id
+  instance_type = "PRIMARY"
+
+  machine_config {
+    cpu_count = 2
+  }
+
+  # Enables Public IP (Required for external connectivity in this lab)
+  network_config {
+    enable_public_ip = true
+  }
+
+  # Enables the Columnar Engine for fast analytical queries
+  database_flags = {
+    "google_columnar_engine.enabled" = "on"
+    "password.enforce_complexity"    = "on"
+  }
+
+  # Explicit dependency ensures networking is ready before instance creation
+  depends_on = [google_service_networking_connection.private_vpc_connection]
+}
+
+resource "google_alloydb_instance" "read_pool" {
+  cluster       = google_alloydb_cluster.main.name
+  instance_id   = var.read_pool_id
+  instance_type = "READ_POOL"
+
+  machine_config {
+    cpu_count = 2
+  }
+
+  # Specifies this pool has 1 node
+  read_pool_config {
+    node_count = 1
+  }
+  
+  depends_on = [google_alloydb_instance.primary]
+}
 
 # =============================================================================
 # END TODO SECTION
@@ -240,17 +277,15 @@ output "app_service_account" {
 
 output "current_user_email" {
   description = "Your email (granted IAM database access)"
-  value       = data.google_client_openid_userinfo.current.email
+  value       = var.user_email # <--- Reference the variable instead
 }
 
-# Uncomment these outputs after adding your AlloyDB cluster:
-#
-# output "cluster_id" {
-#   description = "The AlloyDB cluster ID"
-#   value       = google_alloydb_cluster.main.cluster_id
-# }
-#
-# output "primary_instance_ip" {
-#   description = "The primary instance public IP address"
-#   value       = google_alloydb_instance.primary.public_ip_address
-# }
+output "cluster_id" {
+  description = "The AlloyDB cluster ID"
+  value       = google_alloydb_cluster.main.cluster_id
+}
+
+output "primary_instance_ip" {
+  description = "The primary instance public IP address"
+  value       = google_alloydb_instance.primary.public_ip_address
+}
