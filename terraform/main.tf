@@ -178,7 +178,7 @@ resource "random_password" "alloydb_initial_password" {
 # TODO: ADD YOUR ALLOYDB CLUSTER CONFIGURATION BELOW
 # =============================================================================
 
-# YOUR CODE HERE - Use Gemini Code Assist with the prompt above
+# YOUR CODE HERE
 
 
 
