@@ -46,3 +46,7 @@ tfplan
 
 # Streamlit
 .streamlit/
+
+# Misc
+*.csv
+
