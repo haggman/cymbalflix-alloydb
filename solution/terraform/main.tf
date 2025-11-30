@@ -217,6 +217,8 @@ resource "google_alloydb_instance" "primary" {
     "google_columnar_engine.enabled" = "on"
     "password.enforce_complexity"    = "on"
     "alloydb.iam_authentication"     = "on"
+    "google_ml_integration.enable_model_support" = "on"
+    "google_ml_integration.enable_ai_query_engine"   = "on"
   }
 
   # Explicit dependency ensures networking is ready before instance creation
