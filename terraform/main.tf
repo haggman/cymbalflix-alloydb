@@ -219,6 +219,11 @@ output "app_service_account" {
   value       = google_service_account.app.email
 }
 
+output "app_db_user" {
+  description = "The database username for the app service account (truncated format)"
+  value       = trimsuffix(google_service_account.app.email, ".gserviceaccount.com")
+}
+
 output "current_user_email" {
   description = "Your email (granted IAM database access)"
   value       = var.user_email # <--- Reference the variable instead

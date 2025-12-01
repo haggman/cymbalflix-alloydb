@@ -28,7 +28,7 @@ if [ ! -f ".env" ]; then
         echo "   - DB_USER: Your IAM email (e.g., student@qwiklabs.net)"
         echo ""
         echo "Run this command to edit:"
-        echo "   nano .env"
+        echo "   edit .env"
         echo ""
         echo "Then run this script again."
         exit 0

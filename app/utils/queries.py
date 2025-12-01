@@ -62,7 +62,6 @@ def get_stats() -> Dict[str, int]:
         stats = {}
         
         # Movie count
-        # TODO: Write a COUNT query for the 'movies' table
         result = conn.execute(text("SELECT COUNT(*) FROM movies"))
         stats["movie_count"] = result.scalar()
         

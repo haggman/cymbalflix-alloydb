@@ -144,6 +144,17 @@ resource "google_project_iam_member" "app_alloydb_client" {
   member  = "serviceAccount:${google_service_account.app.email}"
 }
 
+# IAM user for the application service account (for Cloud Run)
+# Note: AlloyDB truncates service account emails after ".iam" so we will strip ".gserviceaccount.com"
+resource "google_alloydb_user" "app_iam_user" {
+  cluster        = google_alloydb_cluster.main.id
+  user_id        = trimsuffix(google_service_account.app.email, ".gserviceaccount.com")
+  user_type      = "ALLOYDB_IAM_USER"
+  database_roles = ["alloydbiamuser"]
+
+  depends_on = [google_alloydb_instance.primary]
+}
+
 # -----------------------------------------------------------------------------
 # AlloyDB User Registration
 # -----------------------------------------------------------------------------
@@ -276,6 +287,11 @@ output "alloydb_service_account" {
 output "app_service_account" {
   description = "The application service account email"
   value       = google_service_account.app.email
+}
+
+output "app_db_user" {
+  description = "The database username for the app service account (truncated format)"
+  value       = trimsuffix(google_service_account.app.email, ".gserviceaccount.com")
 }
 
 output "current_user_email" {
