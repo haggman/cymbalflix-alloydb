@@ -215,7 +215,6 @@ resource "google_alloydb_cluster" "main" {
     password = random_password.alloydb_initial_password.result
   }
 
-  # Note: We omit the 'initial_user' block because we are using IAM Auth
 }
 
 resource "google_alloydb_instance" "primary" {
