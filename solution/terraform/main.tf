@@ -129,6 +129,15 @@ resource "google_project_iam_member" "alloydb_vertex_user" {
   member  = "serviceAccount:${google_service_account.alloydb.email}"
 }
 
+# Grant AlloyDB SERVICE AGENT access to Vertex AI for embeddings
+resource "google_project_iam_member" "alloydb_vertex_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-alloydb.iam.gserviceaccount.com"
+  
+  depends_on = [google_alloydb_cluster.main]  # Service agent created with cluster
+}
+
 # Service account for the Cloud Run application
 resource "google_service_account" "app" {
   account_id   = "cymbalflix-app"
