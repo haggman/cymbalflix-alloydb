@@ -114,21 +114,6 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 # privilege. Each component gets its own identity with only the permissions
 # it needs.
 
-# Service account for AlloyDB - needs Vertex AI access for AI features
-resource "google_service_account" "alloydb" {
-  account_id   = "cymbalflix-alloydb"
-  display_name = "CymbalFlix AlloyDB Service Account"
-
-  depends_on = [google_project_service.apis]
-}
-
-# Grant AlloyDB service account access to Vertex AI for embeddings
-resource "google_project_iam_member" "alloydb_vertex_user" {
-  project = var.project_id
-  role    = "roles/aiplatform.user"
-  member  = "serviceAccount:${google_service_account.alloydb.email}"
-}
-
 # Grant AlloyDB SERVICE AGENT access to Vertex AI for embeddings
 resource "google_project_iam_member" "alloydb_vertex_user" {
   project = var.project_id
