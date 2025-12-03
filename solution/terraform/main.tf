@@ -32,6 +32,10 @@ provider "google" {
   region  = var.region
 }
 
+data "google_project" "current" {
+  project_id = var.project_id
+}
+
 # -----------------------------------------------------------------------------
 # Enable Required APIs
 # -----------------------------------------------------------------------------
@@ -270,11 +274,6 @@ output "region" {
 output "network_name" {
   description = "The VPC network name"
   value       = google_compute_network.main.name
-}
-
-output "alloydb_service_account" {
-  description = "The AlloyDB service account email"
-  value       = google_service_account.alloydb.email
 }
 
 output "app_service_account" {
