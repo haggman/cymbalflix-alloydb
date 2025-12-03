@@ -142,17 +142,6 @@ resource "google_project_iam_member" "app_alloydb_client" {
   member  = "serviceAccount:${google_service_account.app.email}"
 }
 
-# IAM user for the application service account (for Cloud Run)
-# Note: AlloyDB truncates service account emails after ".iam" so we will strip ".gserviceaccount.com"
-resource "google_alloydb_user" "app_iam_user" {
-  cluster        = google_alloydb_cluster.main.id
-  user_id        = trimsuffix(google_service_account.app.email, ".gserviceaccount.com")
-  user_type      = "ALLOYDB_IAM_USER"
-  database_roles = ["alloydbiamuser"]
-
-  depends_on = [google_alloydb_instance.primary]
-}
-
 # -----------------------------------------------------------------------------
 # AlloyDB User Registration
 # -----------------------------------------------------------------------------
@@ -166,6 +155,17 @@ resource "google_alloydb_user" "iam_user" {
   
   # This specific line is what makes them a DB Admin
   database_roles = ["alloydbsuperuser"] 
+
+  depends_on = [google_alloydb_instance.primary]
+}
+
+# IAM user for the application service account (for Cloud Run)
+# Note: AlloyDB truncates service account emails after ".iam" so we will strip ".gserviceaccount.com"
+resource "google_alloydb_user" "app_iam_user" {
+  cluster        = google_alloydb_cluster.main.id
+  user_id        = trimsuffix(google_service_account.app.email, ".gserviceaccount.com")
+  user_type      = "ALLOYDB_IAM_USER"
+  database_roles = ["alloydbiamuser"]
 
   depends_on = [google_alloydb_instance.primary]
 }
