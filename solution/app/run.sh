@@ -89,4 +89,5 @@ echo "   Press Ctrl+C to stop the server."
 echo ""
 
 # Run Streamlit
-streamlit run Home.py --server.port 8501 --server.address 0.0.0.0
+streamlit run Home.py --server.port 8501 --server.address 0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false
+
