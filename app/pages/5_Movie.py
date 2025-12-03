@@ -119,10 +119,7 @@ else:
             if movie['imdb_url']:
                 st.markdown(f"[🎬 View on IMDb]({movie['imdb_url']})")
             
-            if movie['tmdb_url']:
-                st.markdown(f"[🎥 View on TMDb]({movie['tmdb_url']})")
-            
-            if not movie['imdb_url'] and not movie['tmdb_url']:
+            if not movie['imdb_url']:
                 st.caption("No external links available")
         
         # ---------------------------------------------------------------------
