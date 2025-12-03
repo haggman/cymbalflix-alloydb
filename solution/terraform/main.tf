@@ -142,6 +142,12 @@ resource "google_project_iam_member" "app_alloydb_client" {
   member  = "serviceAccount:${google_service_account.app.email}"
 }
 
+resource "google_project_iam_member" "app_alloydb_db_user" {
+  project = var.project_id
+  role    = "roles/alloydb.databaseUser"
+  member  = "serviceAccount:${google_service_account.app.email}"
+}
+
 # -----------------------------------------------------------------------------
 # AlloyDB User Registration
 # -----------------------------------------------------------------------------
